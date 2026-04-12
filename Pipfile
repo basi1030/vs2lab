@@ -7,10 +7,10 @@ name = "pypi"
 redis = "*"
 rpyc = "*"
 zmq = "*"
-ipython = "*"
 jupyter = "*"
 jupyter_server = "*"
 ipyparallel = "*"
+ipython = "*"
 
 [dev-packages]
 pylint = "*"
