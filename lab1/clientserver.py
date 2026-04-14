@@ -40,7 +40,10 @@ class Server:
                     if not data:
                         break  # stop if client stopped
                     response = self.getData(data)
+                    name = data.decode('ascii')
+                    self._logger.info("GET-Request received for "+ name + ".")
                     connection.send(response.encode('ascii')) 
+                    self._logger.info("GET-Response sent for "+ name + ".")
                 connection.close()  # close the connection
             except socket.timeout:
                 pass  # ignore timeouts
@@ -53,8 +56,7 @@ class Server:
         if decodedData in self.telefon_verzeichnis:
             return self.telefon_verzeichnis[decodedData]
         else:
-            return "Der Name " + data + " befindet sich nicht im Telefonverzeichnis."
-        return "Fehlermeldung"
+            return "Der Name " + decodedData + " befindet sich nicht im Telefonverzeichnis."
 
 class Client:
     """ The client """
@@ -68,14 +70,16 @@ class Client:
     def call(self, msg_in):
         """ Call server """
         self.sock.send(msg_in.encode('ascii'))  # send encoded string as data
+        self.logger.info("GET-Request sent for "+ msg_in + ".")
         data = self.sock.recv(1024)  # receive the response
         msg_out = data.decode('ascii')
+        self.logger.info("GET-Response received for "+ msg_in + ".")
         print(msg_in + ": ", msg_out)  # print the result
-        self.logger.info("Client down.")
         return msg_out
 
     def close(self):
         """ Close socket """
+        self.logger.info("Client down. Socket closed.")
         self.sock.close()
 
     def get(self, name):

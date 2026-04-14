@@ -25,14 +25,36 @@ class TestEchoService(unittest.TestCase):
         super().setUp()
         self.client = clientserver.Client()  # create new client for each test
 
-    def test_srv_get(self):  # each test_* function is a test
-        """Test simple call"""
-        msg = self.client.call("Hello VS2Lab")
-        self.assertEqual(msg, 'Hello VS2Lab*')
-
     def tearDown(self):
         self.client.close()  # terminate client after each test
+        
+    def test_get_existing(self):
+        """Test GET mit vorhandenem Namen"""
+        result = self.client.get("Simi")
+        self.assertEqual(result, "+491745789846")
 
+    def test_get_not_existing(self):
+        """Test GET mit unbekanntem Namen"""
+        result = self.client.get("Max")
+        self.assertEqual("Der Name Max befindet sich nicht im Telefonverzeichnis.", result)
+
+    def test_getall(self):
+        """Test GETALL"""
+        result = self.client.getall()
+        self.assertIn("Simi", result)
+        self.assertIn("Lisa", result)
+        self.assertIn("Joline", result)
+
+    def test_backend_get(self):
+        result = self._server.getData(b"Simi")
+        self.assertEqual(result, "+491745789846")
+
+    def test_backend_getall(self):
+        result = self._server.getData(b"GETALL")
+        self.assertIn("Simi", result)
+        self.assertIn("Lisa", result)
+        self.assertIn("Joline", result)
+        
     @classmethod
     def tearDownClass(cls):
         cls._server._serving = False  # break out of server loop. pylint: disable=protected-access
