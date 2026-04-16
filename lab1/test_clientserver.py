@@ -38,6 +38,11 @@ class TestEchoService(unittest.TestCase):
         result = self.client.get("Max")
         self.assertEqual("Der Name Max befindet sich nicht im Telefonverzeichnis.", result)
 
+    def test_get_not_existing(self):
+        """Test GET mit unbekanntem Namen"""
+        result = self.client.get("")
+        self.assertEqual("Der Name befindet sich nicht im Telefonverzeichnis.", result)
+
     def test_getall(self):
         """Test GETALL"""
         result = self.client.getall()
