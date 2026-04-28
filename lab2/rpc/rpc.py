@@ -1,5 +1,6 @@
 import constRPC
-
+import time
+import threading
 from context import lab_channel
 
 
@@ -51,6 +52,8 @@ class Server:
             if msgreq is not None:
                 client = msgreq[0]  # see who is the caller
                 msgrpc = msgreq[1]  # fetch call & parameters
+                self.chan.send_to({client}, "ACK - Message received") 
+                time.sleep(10)
                 if constRPC.APPEND == msgrpc[0]:  # check what is being requested
                     result = self.append(msgrpc[1], msgrpc[2])  # do local call
                     self.chan.send_to({client}, result)  # return response
