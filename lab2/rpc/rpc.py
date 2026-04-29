@@ -1,7 +1,8 @@
 import constRPC
+
+from context import lab_channel
 import time
 import threading
-from context import lab_channel
 
 
 class DBList:
@@ -14,6 +15,7 @@ class DBList:
 
 
 class Client:
+    done_event = threading.Event()
     def __init__(self):
         self.chan = lab_channel.Channel()
         self.client = self.chan.join('client')
@@ -26,12 +28,30 @@ class Client:
     def stop(self):
         self.chan.leave('client')
 
-    def append(self, data, db_list):
+    def append(self, data, db_list, callback):
         assert isinstance(db_list, DBList)
         msglst = (constRPC.APPEND, data, db_list)  # message payload
         self.chan.send_to(self.server, msglst)  # send msg to server
-        msgrcv = self.chan.receive_from(self.server)  # wait for response
-        return msgrcv[1]  # pass it to caller
+        ack = self.chan.receive_from(self.server)    
+        if ack is not None: 
+            print(ack)
+            t = threading.Thread(target=self._wait_for_result, args=(callback,))
+            t.start()
+        #exception throw
+        while not self.done_event.is_set():
+            print("Client arbeitet parallel")
+            time.sleep(1)
+    
+    def _wait_for_result(self, callback):
+        msg = self.chan.receive_from(self.server)
+        if msg is not None:        
+            callback(msg)
+            self.done_event.set()
+    
+    def my_callback(self, result):    
+        print("Result: {}".format(result[1].value))
+
+        
 
 
 class Server:
@@ -52,8 +72,8 @@ class Server:
             if msgreq is not None:
                 client = msgreq[0]  # see who is the caller
                 msgrpc = msgreq[1]  # fetch call & parameters
-                self.chan.send_to({client}, "ACK - Message received") 
-                time.sleep(10)
+                self.chan.send_to({client}, "ACK - Message received")
+                time.sleep(10);
                 if constRPC.APPEND == msgrpc[0]:  # check what is being requested
                     result = self.append(msgrpc[1], msgrpc[2])  # do local call
                     self.chan.send_to({client}, result)  # return response

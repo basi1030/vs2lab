@@ -9,8 +9,7 @@ cl = rpc.Client()
 cl.run()
 
 base_list = rpc.DBList({'foo'})
-result_list = cl.append('bar', base_list)
+result_list = cl.append('bar', base_list, cl.my_callback)
 
-print("Result: {}".format(result_list.value))
 
 cl.stop()
