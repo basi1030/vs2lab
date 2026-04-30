@@ -37,6 +37,8 @@ class Client:
             print(ack)
             t = threading.Thread(target=self._wait_for_result, args=(callback,))
             t.start()
+        else:
+            raise Exception("No ACK received from server")
         #exception throw
         while not self.done_event.is_set():
             print("Client arbeitet parallel")
