@@ -11,6 +11,8 @@ jupyter = "*"
 jupyter_server = "*"
 ipyparallel = "*"
 ipython = "*"
+pypdf = "*"
+spacy = "*"
 
 [dev-packages]
 pylint = "*"
