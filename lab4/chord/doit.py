@@ -11,6 +11,7 @@ import logging
 import sys
 import multiprocessing as mp
 
+import random
 import chordnode as chord_node
 import constChord
 from context import lab_channel, lab_logging
@@ -29,11 +30,35 @@ class DummyChordClient:
         self.channel.bind(self.node_id)
 
     def run(self):
-        print("Implement me pls...")
-        self.channel.send_to(  # a final multicast
-            {i.decode() for i in list(self.channel.channel.smembers('node'))},
-            constChord.STOP)
+        # Alle aktuell existierenden Knoten holen
+        nodes = [i.decode()
+                for i in self.channel.channel.smembers('node')]
 
+        # Zufälligen Startknoten wählen
+        start_node = random.choice(nodes)
+
+        # Zufälligen Schlüssel wählen
+        key = random.randint(0, self.channel.MAXPROC - 1)
+
+        print(f"LOOKUP({key}) über Node {start_node}")
+
+        # Anfrage starten
+        self.channel.send_to(
+            [start_node],
+            (constChord.LOOKUP_REQ, key, self.node_id)
+        )
+
+        # Auf Antwort warten
+        sender, reply = self.channel.receive_from_any()
+
+        if reply[0] == constChord.LOOKUP_REP:
+            print(f"succ({key}) = {reply[1]}")
+
+        # Alle Knoten beenden
+        self.channel.send_to(
+            {i.decode() for i in self.channel.channel.smembers('node')},
+            constChord.STOP
+        )
 
 def create_and_run(num_bits, node_class, enter_bar, run_bar):
     """
