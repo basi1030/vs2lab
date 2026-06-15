@@ -47,6 +47,9 @@ class Process:
         self.peer_type = 'unassigned'  # A flag indicating behavior pattern
         self.logger = logging.getLogger("vs2lab.lab5.mutex.process.Process")
 
+        #änderung
+        self.timeout_counters = {}
+
     def __mapid(self, id='-1'):
         # format channel member address
         if id == '-1':
@@ -92,9 +95,25 @@ class Process:
         processes_with_later_message = set([req[1] for req in self.queue[1:]])
         # Access granted if this process is first in queue and all others have answered (logically) later
         first_in_queue = self.queue[0][1] == self.process_id
+        #änderung??
         all_have_answered = len(self.other_processes) == len(
             processes_with_later_message)
         return first_in_queue and all_have_answered
+    
+    #änderung neue methode
+    def __remove_crashed_process(self, crashed_id):
+        if crashed_id in self.other_processes:
+            self.other_processes.remove(crashed_id)
+        if crashed_id in self.all_processes:
+            self.all_processes.remove(crashed_id)
+
+        self.queue = [msg for msg in self.queue if msg[1] != crashed_id]
+        self.__cleanup_queue()
+
+        self.logger.warning("{} detected crash of {} and removed it. remaining neighbors: {}".format(
+            self.__mapid(), self.__mapid(crashed_id), self.other_processes))
+
+
 
     def __receive(self):
         # Pick up any message
@@ -124,12 +143,28 @@ class Process:
 
             self.__cleanup_queue()  # Finally sort and cleanup the queue
         else:
+            """
             self.logger.info("{} timed out on RECEIVE. Local queue: {}".
                              format(self.__mapid(),
                                     list(map(lambda msg: (
                                         'Clock '+str(msg[0]),
                                         self.__mapid(msg[1]),
                                         msg[2]), self.queue))))
+            """
+            # änderung: Timeout-Behandlung zur Erkennung toter Prozesse
+            self.logger.info("{} timed out on RECEIVE. Checking for dead processes...".format(self.__mapid()))
+            
+            # Wer hat uns noch keine Nachricht geschickt, obwohl wir (vielleicht) darauf warten?
+            processes_with_later_message = set([req[1] for req in self.queue[1:]])
+            
+            for p_id in list(self.other_processes):
+                if p_id not in processes_with_later_message:
+                    # Erhöhe den Verdachts-Zähler für diesen Prozess
+                    self.timeout_counters[p_id] = self.timeout_counters.get(p_id, 0) + 1
+                    
+                    # Wenn ein Prozess 2 Mal hintereinander bei Timeout nicht geantwortet hat, gilt er als tot
+                    if self.timeout_counters[p_id] >= 2:
+                        self.__remove_crashed_process(p_id)
 
     def init(self, peer_name, peer_type):
         self.channel.bind(self.process_id)
