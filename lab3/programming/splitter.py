@@ -21,10 +21,6 @@ context = zmq.Context()
 sender = context.socket(zmq.PUSH)
 sender.bind("tcp://*:5557")
 
-# Socket with direct access to the sink: used to synchronize start of batch
-sink = context.socket(zmq.PUSH)
-sink.connect("tcp://localhost:5558")
-
 print("Press Enter when the workers are ready: ")
 _ = input()
 print("Sending tasks to workers...")

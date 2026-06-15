@@ -15,9 +15,6 @@ context = zmq.Context()
 receiver = context.socket(zmq.PULL)
 receiver.bind("tcp://*:5559")
 
-# Wait for start of batch
-word = receiver.recv_string()
-
 # Wörter zählen
 word_count = {}
 
