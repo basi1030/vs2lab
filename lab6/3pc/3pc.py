@@ -46,11 +46,9 @@ if __name__ == "__main__":  # if script is started from command line
     # we need to spawn processes for support of windows
     mp.set_start_method('spawn')
 
-    # create barriers to synchonize bootstrapping
-    bar1 = mp.Barrier(n+1)  # Wait for channel population to complete
-    bar2 = mp.Barrier(n+1)  # Wait for process-group init to complete
+    bar1 = mp.Barrier(n+1) 
+    bar2 = mp.Barrier(n+1)
 
-    # start n participants in separate processes
     participants = []
     for i in range(n):
         participant_proc = mp.Process(

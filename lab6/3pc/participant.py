@@ -42,7 +42,7 @@ class Participant:
 
         return (
             LOCAL_ABORT
-            if random.random() > 2/3
+            if random.random() > 0.9
             else LOCAL_SUCCESS
         )
 
@@ -57,6 +57,12 @@ class Participant:
 
         self.state = state
 
+    def _new_coordinator(self):
+        return min(
+            self.participants,
+            key=int
+        )
+
     def init(self):
 
         self.channel.bind(
@@ -65,6 +71,10 @@ class Participant:
 
         self.coordinator = self.channel.subgroup(
             'coordinator'
+        )
+
+        self.participants = self.channel.subgroup(
+            'participant'
         )
 
         self._enter_state('INIT')
@@ -133,8 +143,29 @@ class Participant:
 
         if not msg:
 
+            #
+            # Coordinator crashed while READY
+            # 3PC termination: ABORT
+            #
+
+            new_coord = self._new_coordinator()
+
+            if self.participant == new_coord:
+
+                self.logger.info(
+                    "Participant {} : Becoming coordinator (READY)".format(self.participant)
+                )
+
+                self.channel.send_to(
+                    self.participants,
+                    GLOBAL_ABORT
+                )
+
+            self._enter_state('ABORT')
+
             return (
-                "Coordinator crashed while READY"
+                "Participant {} terminated in state ABORT."
+                .format(self.participant)
             )
 
         if msg[1] == GLOBAL_ABORT:
@@ -147,6 +178,10 @@ class Participant:
             )
 
         assert msg[1] == PREPARE_COMMIT
+
+        #
+        # PRECOMMIT
+        #
 
         self._enter_state('PRECOMMIT')
 
@@ -166,8 +201,29 @@ class Participant:
 
         if not msg:
 
+            #
+            # Coordinator crashed while PRECOMMIT
+            # 3PC termination: COMMIT
+            #
+
+            new_coord = self._new_coordinator()
+
+            if self.participant == new_coord:
+
+                self.logger.info(
+                    "Participant {} : Becoming coordinator (PRECOMMIT)".format(self.participant)
+                )
+
+                self.channel.send_to(
+                    self.participants,
+                    GLOBAL_COMMIT
+                )
+
+            self._enter_state('COMMIT')
+
             return (
-                "Coordinator crashed while PRECOMMIT"
+                "Participant {} terminated in state COMMIT."
+                .format(self.participant)
             )
 
         assert msg[1] == GLOBAL_COMMIT

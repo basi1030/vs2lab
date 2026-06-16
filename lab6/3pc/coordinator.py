@@ -1,4 +1,6 @@
+import random
 import logging
+
 import stablelog
 
 from const3pc import (
@@ -14,11 +16,17 @@ from const3pc import (
 
 
 class Coordinator:
+    CRASH_BEFORE_VOTE_REQUEST = 0.10
+    CRASH_AFTER_VOTE_REQUEST = 0.90
+    CRASH_AFTER_PREPARE_COMMIT = 0.30
 
     def __init__(self, chan):
+
         self.channel = chan
 
-        self.coordinator = self.channel.join('coordinator')
+        self.coordinator = self.channel.join(
+            'coordinator'
+        )
 
         self.participants = []
 
@@ -32,19 +40,21 @@ class Coordinator:
 
         self.state = None
 
-    def _enter_state(self, state):
-        self.stable_log.info(state)
+    @staticmethod
+    def _crash(probability):
+        return random.random() < probability
 
-        self.logger.info(
-            "Coordinator {} entered state {}"
-            .format(self.coordinator, state)
-        )
-
+    def _enter_state(self, state): 
+        self.stable_log.info(state) 
+        self.logger.info( "Coordinator {} entered state {}" .format(self.coordinator, state) ) 
+        
         self.state = state
 
     def init(self):
 
-        self.channel.bind(self.coordinator)
+        self.channel.bind(
+            self.coordinator
+        )
 
         self.participants = self.channel.subgroup(
             'participant'
@@ -60,10 +70,34 @@ class Coordinator:
 
         self._enter_state('WAIT')
 
+        if self._crash(self.CRASH_BEFORE_VOTE_REQUEST):
+
+            self.logger.info(
+                "Coordinator crashed before VOTE_REQUEST"
+            )
+
+            return (
+                "Coordinator crashed before VOTE_REQUEST"
+            )
+
         self.channel.send_to(
             self.participants,
             VOTE_REQUEST
         )
+
+        #
+        # Crash nach VOTE_REQUEST
+        #
+
+        if self._crash(self.CRASH_AFTER_VOTE_REQUEST):
+
+            self.logger.info(
+                "Coordinator crashed after VOTE_REQUEST"
+            )
+
+            return (
+                "Coordinator crashed after VOTE_REQUEST"
+            )
 
         waiting = list(self.participants)
 
@@ -74,6 +108,11 @@ class Coordinator:
                 TIMEOUT
             )
 
+            #
+            # participant failure in WAIT
+            # -> ABORT
+            #
+
             if not msg:
 
                 self._enter_state('ABORT')
@@ -83,7 +122,10 @@ class Coordinator:
                     GLOBAL_ABORT
                 )
 
-                return "Coordinator aborted (timeout)"
+                return (
+                    "Coordinator aborted "
+                    "(participant timeout)"
+                )
 
             sender, vote = msg
 
@@ -96,7 +138,12 @@ class Coordinator:
                     GLOBAL_ABORT
                 )
 
-                return "Coordinator aborted (vote abort)"
+                return (
+                    "Coordinator aborted "
+                    "(vote abort)"
+                )
+
+            assert vote == VOTE_COMMIT
 
             waiting.remove(sender)
 
@@ -111,6 +158,20 @@ class Coordinator:
             PREPARE_COMMIT
         )
 
+        #
+        # Crash nach PREPARE_COMMIT
+        #
+
+        if self._crash(self.CRASH_AFTER_PREPARE_COMMIT):
+
+            self.logger.info(
+                "Coordinator crashed after PREPARE_COMMIT"
+            )
+
+            return (
+                "Coordinator crashed after PREPARE_COMMIT"
+            )
+
         waiting = list(self.participants)
 
         while waiting:
@@ -120,16 +181,24 @@ class Coordinator:
                 TIMEOUT
             )
 
+            #
+            # participant failure in PRECOMMIT
+            # -> COMMIT
+            #
+
             if not msg:
 
-                self._enter_state('ABORT')
+                self._enter_state('COMMIT')
 
                 self.channel.send_to(
                     self.participants,
-                    GLOBAL_ABORT
+                    GLOBAL_COMMIT
                 )
 
-                return "Coordinator aborted (precommit timeout)"
+                return (
+                    "Coordinator committed "
+                    "(participant timeout in PRECOMMIT)"
+                )
 
             sender, answer = msg
 
@@ -142,7 +211,10 @@ class Coordinator:
                     GLOBAL_ABORT
                 )
 
-                return "Coordinator aborted"
+                return (
+                    "Coordinator aborted "
+                    "(invalid response)"
+                )
 
             waiting.remove(sender)
 
