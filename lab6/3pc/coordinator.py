@@ -16,9 +16,9 @@ from const3pc import (
 
 
 class Coordinator:
-    CRASH_P_INIT = 0.1
-    CRASH_P_READY = 0.1
-    CRASH_P_PreCommit = 0.1
+    CRASH_P_INIT = 0.0
+    CRASH_P_READY = 0.0
+    CRASH_P_PreCommit = 0.9
 
     def __init__(self, chan):
 
@@ -92,11 +92,11 @@ class Coordinator:
         if self._crash(self.CRASH_P_READY):
 
             self.logger.info(
-                "Coordinator crashed in state WAIT"
+                "Coordinator crashed in status WAIT"
             )
 
             return (
-                "Coordinator crashed in state WAIT"
+                "Coordinator crashed in status WAIT"
             )
 
         waiting = list(self.participants)
