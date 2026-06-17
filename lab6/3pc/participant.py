@@ -42,7 +42,7 @@ class Participant:
 
         return (
             LOCAL_ABORT
-            if random.random() > 0.9
+            if random.random() > 2 / 3
             else LOCAL_SUCCESS
         )
 

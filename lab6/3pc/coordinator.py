@@ -16,9 +16,9 @@ from const3pc import (
 
 
 class Coordinator:
-    CRASH_BEFORE_VOTE_REQUEST = 0.10
-    CRASH_AFTER_VOTE_REQUEST = 0.90
-    CRASH_AFTER_PREPARE_COMMIT = 0.30
+    CRASH_P_INIT = 0.1
+    CRASH_P_READY = 0.1
+    CRASH_P_PreCommit = 0.1
 
     def __init__(self, chan):
 
@@ -70,14 +70,14 @@ class Coordinator:
 
         self._enter_state('WAIT')
 
-        if self._crash(self.CRASH_BEFORE_VOTE_REQUEST):
+        if self._crash(self.CRASH_P_INIT):
 
             self.logger.info(
-                "Coordinator crashed before VOTE_REQUEST"
+                "Coordinator crashed in state WAIT"
             )
 
             return (
-                "Coordinator crashed before VOTE_REQUEST"
+                "Coordinator crashed in state WAIT"
             )
 
         self.channel.send_to(
@@ -89,14 +89,14 @@ class Coordinator:
         # Crash nach VOTE_REQUEST
         #
 
-        if self._crash(self.CRASH_AFTER_VOTE_REQUEST):
+        if self._crash(self.CRASH_P_READY):
 
             self.logger.info(
-                "Coordinator crashed after VOTE_REQUEST"
+                "Coordinator crashed in state WAIT"
             )
 
             return (
-                "Coordinator crashed after VOTE_REQUEST"
+                "Coordinator crashed in state WAIT"
             )
 
         waiting = list(self.participants)
@@ -162,7 +162,7 @@ class Coordinator:
         # Crash nach PREPARE_COMMIT
         #
 
-        if self._crash(self.CRASH_AFTER_PREPARE_COMMIT):
+        if self._crash(self.CRASH_P_PreCommit):
 
             self.logger.info(
                 "Coordinator crashed after PREPARE_COMMIT"
