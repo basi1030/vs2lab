@@ -67,6 +67,12 @@ class Process:
                 if len(self.queue) == 0:
                     break
 
+    def __send_allow_to_enter(self, requester):
+        self.clock = self.clock + 1  # Increment clock value
+        msg = (self.clock, self.process_id, ALLOW)
+        self.channel.send_to([requester], msg)  # Permit other
+        self.logger.debug(f"ALLOW message sent to {self.__mapid(requester)}")
+
     def __request_to_enter(self):
         self.clock = self.clock + 1  # Increment clock value
         request_msg = (self.clock, self.process_id, ENTER)
@@ -74,7 +80,7 @@ class Process:
         self.__cleanup_queue()  # Sort the queue
         self.channel.send_to(self.other_processes, request_msg)  # Send request
 
-    def __allowed_to_enter(self):
+    def __check_allowed_to_enter(self):
 
         if len(self.queue) == 0:
             return False
@@ -86,12 +92,11 @@ class Process:
         first_in_queue = (
             self.queue[0][1] == self.process_id
         )
-
+        
         all_have_answered = (
             len(self.other_processes)
             == len(processes_with_later_message)
         )
-
         return first_in_queue and all_have_answered
 
     def __release(self):
@@ -124,7 +129,7 @@ class Process:
             if msg[2] == ENTER:
                 self.queue.append(msg)  # Append an ENTER request
                 # and unconditionally allow (don't want to access CS oneself)
-                self.__allowed_to_enter()
+                self.__send_allow_to_enter(msg[1])
             elif msg[2] == ALLOW:
                 self.queue.append(msg)  # Append an ALLOW
             elif msg[2] == RELEASE:
@@ -185,7 +190,7 @@ class Process:
 
                 self.__request_to_enter()
 
-                while not self.__allowed_to_enter():
+                while not self.__check_allowed_to_enter():
                     self.__receive()
                     self.__detect_failed_processes()
                     now = time.time()

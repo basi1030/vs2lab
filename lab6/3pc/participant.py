@@ -81,10 +81,6 @@ class Participant:
 
     def run(self):
 
-        #
-        # wait for vote request
-        #
-
         msg = self.channel.receive_from(
             self.coordinator,
             TIMEOUT
@@ -101,10 +97,6 @@ class Participant:
 
         assert msg[1] == VOTE_REQUEST
 
-        #
-        # local transaction
-        #
-
         result = self._do_work()
 
         if result == LOCAL_ABORT:
@@ -120,10 +112,6 @@ class Participant:
                 "Participant {} aborted."
                 .format(self.participant)
             )
-
-        #
-        # READY
-        #
 
         self._enter_state('READY')
 
@@ -143,11 +131,7 @@ class Participant:
 
         if not msg:
 
-            #
             # Coordinator crashed while READY
-            # 3PC termination: ABORT
-            #
-
             new_coord = self._new_coordinator()
 
             if self.participant == new_coord:
@@ -200,11 +184,7 @@ class Participant:
         )
 
         if not msg:
-
-            #
             # Coordinator crashed while PRECOMMIT
-            # 3PC termination: COMMIT
-            #
 
             new_coord = self._new_coordinator()
 

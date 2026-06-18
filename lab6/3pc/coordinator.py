@@ -85,10 +85,6 @@ class Coordinator:
             VOTE_REQUEST
         )
 
-        #
-        # Crash nach VOTE_REQUEST
-        #
-
         if self._crash(self.CRASH_P_READY):
 
             self.logger.info(
@@ -158,10 +154,6 @@ class Coordinator:
             PREPARE_COMMIT
         )
 
-        #
-        # Crash nach PREPARE_COMMIT
-        #
-
         if self._crash(self.CRASH_P_PreCommit):
 
             self.logger.info(
@@ -180,11 +172,6 @@ class Coordinator:
                 self.participants,
                 TIMEOUT
             )
-
-            #
-            # participant failure in PRECOMMIT
-            # -> COMMIT
-            #
 
             if not msg:
 
